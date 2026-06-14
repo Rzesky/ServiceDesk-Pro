@@ -16,6 +16,7 @@ a {
 
 input,
 textarea,
+select,
 button {
     width: 100%;
     border-radius: 6px;
@@ -24,7 +25,8 @@ button {
 }
 
 input,
-textarea {
+textarea,
+select {
     border: 1px solid #cbd5e1;
 }
 
@@ -181,6 +183,74 @@ button {
 
 .container h1 {
     margin: 0 0 24px;
+}
+
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.filter-bar {
+    display: grid;
+    align-items: end;
+    gap: 16px;
+    grid-template-columns: 180px minmax(240px, 1fr) 120px;
+    margin-bottom: 20px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.filter-bar label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 700;
+}
+
+.table-card {
+    overflow-x: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fff;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+    vertical-align: top;
+}
+
+th {
+    color: #64748b;
+    font-size: 14px;
+}
+
+tr:last-child td {
+    border-bottom: 0;
+}
+
+.status-badge {
+    display: inline-block;
+    border-radius: 999px;
+    background: #e0f2fe;
+    color: #075985;
+    font-size: 13px;
+    padding: 4px 10px;
+}
+
+.empty-state {
+    color: #64748b;
+    text-align: center;
 }
 
 .stats-grid {
