@@ -7,7 +7,7 @@ $user = current_user();
 $statuses = ['open', 'in_progress', 'waiting', 'closed'];
 $counts = array_fill_keys($statuses, 0);
 
-$stmt = db()->prepare('SELECT status, COUNT(*) AS total FROM tickets GROUP BY status');
+$stmt = db()->prepare('SELECT status, COUNT(*) AS total FROM tickets WHERE deleted_at IS NULL GROUP BY status');
 $stmt->execute();
 
 foreach ($stmt->fetchAll() as $row) {
@@ -17,7 +17,8 @@ foreach ($stmt->fetchAll() as $row) {
 $stmt = db()->prepare(
     'SELECT COUNT(*) AS total
      FROM tickets
-     WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)'
+     WHERE deleted_at IS NULL
+       AND created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)'
 );
 $stmt->execute();
 $ticketsLastSevenDays = (int) $stmt->fetchColumn();
@@ -25,7 +26,7 @@ $ticketsLastSevenDays = (int) $stmt->fetchColumn();
 $priorities = ['low', 'medium', 'high', 'urgent'];
 $priorityCounts = array_fill_keys($priorities, 0);
 
-$stmt = db()->prepare('SELECT priority, COUNT(*) AS total FROM tickets GROUP BY priority');
+$stmt = db()->prepare('SELECT priority, COUNT(*) AS total FROM tickets WHERE deleted_at IS NULL GROUP BY priority');
 $stmt->execute();
 
 foreach ($stmt->fetchAll() as $row) {
@@ -35,7 +36,7 @@ foreach ($stmt->fetchAll() as $row) {
 $stmt = db()->prepare(
     'SELECT c.id, c.name, c.email, COUNT(t.id) AS total_tickets
      FROM customers c
-     INNER JOIN tickets t ON t.customer_id = c.id
+     INNER JOIN tickets t ON t.customer_id = c.id AND t.deleted_at IS NULL
      GROUP BY c.id, c.name, c.email
      ORDER BY total_tickets DESC, c.name ASC
      LIMIT 5'
@@ -46,7 +47,8 @@ $topCustomers = $stmt->fetchAll();
 $stmt = db()->prepare(
     'SELECT COUNT(*) / 30 AS average_per_day
      FROM tickets
-     WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)'
+     WHERE deleted_at IS NULL
+       AND created_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)'
 );
 $stmt->execute();
 $averageTicketsPerDay = (float) $stmt->fetchColumn();
@@ -54,11 +56,38 @@ $averageTicketsPerDay = (float) $stmt->fetchColumn();
 $stmt = db()->prepare(
     'SELECT id, customer_name, subject, priority, status, created_at
      FROM tickets
+     WHERE deleted_at IS NULL
      ORDER BY created_at DESC
      LIMIT 5'
 );
 $stmt->execute();
 $latestTickets = $stmt->fetchAll();
+
+$stmt = db()->prepare(
+    'SELECT u.id, u.name, u.email, u.role, COUNT(t.id) AS assigned_tickets
+     FROM users u
+     LEFT JOIN tickets t ON t.assigned_to = u.id AND t.deleted_at IS NULL
+     GROUP BY u.id, u.name, u.email, u.role
+     ORDER BY assigned_tickets DESC, u.name ASC'
+);
+$stmt->execute();
+$assignedByStaff = $stmt->fetchAll();
+
+$stmt = db()->prepare(
+    "SELECT u.id, u.name, u.email, COUNT(DISTINCT t.id) AS closed_tickets
+     FROM users u
+     LEFT JOIN activity_logs al
+       ON al.user_id = u.id
+      AND al.action = 'status_changed'
+      AND al.description LIKE ?
+     LEFT JOIN tickets t
+       ON t.id = al.ticket_id
+      AND t.deleted_at IS NULL
+     GROUP BY u.id, u.name, u.email
+     ORDER BY closed_tickets DESC, u.name ASC"
+);
+$stmt->execute(['% to closed.']);
+$closedByStaff = $stmt->fetchAll();
 
 $stmt = db()->prepare(
     'SELECT al.*, t.subject, u.name AS user_name, u.email AS user_email
@@ -95,6 +124,9 @@ function e(string $value): string
             <a class="active" href="index.php">Dashboard</a>
             <a href="tickets.php">Tickets</a>
             <a href="customers.php">Customers</a>
+            <?php if (can_manage_users()): ?>
+                <a href="users.php">Users</a>
+            <?php endif; ?>
             <a href="logout.php">Logout</a>
         </nav>
     </header>
@@ -179,6 +211,74 @@ function e(string $value): string
                                         <span class="table-subtext"><?= e($customer['email']) ?></span>
                                     </td>
                                     <td><?= (int) $customer['total_tickets'] ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        </section>
+
+        <section class="analytics-grid">
+            <article class="panel dashboard-section">
+                <h2>Tickets Assigned by Staff</h2>
+
+                <div class="table-card flush">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Staff Member</th>
+                                <th>Role</th>
+                                <th>Assigned</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (!$assignedByStaff): ?>
+                                <tr>
+                                    <td colspan="3" class="empty-state">No staff data yet.</td>
+                                </tr>
+                            <?php endif; ?>
+
+                            <?php foreach ($assignedByStaff as $staff): ?>
+                                <tr>
+                                    <td>
+                                        <?= e($staff['name']) ?>
+                                        <span class="table-subtext"><?= e($staff['email']) ?></span>
+                                    </td>
+                                    <td><?= e(ucfirst($staff['role'])) ?></td>
+                                    <td><?= (int) $staff['assigned_tickets'] ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+
+            <article class="panel dashboard-section">
+                <h2>Tickets Closed by Staff</h2>
+
+                <div class="table-card flush">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Staff Member</th>
+                                <th>Closed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (!$closedByStaff): ?>
+                                <tr>
+                                    <td colspan="2" class="empty-state">No staff data yet.</td>
+                                </tr>
+                            <?php endif; ?>
+
+                            <?php foreach ($closedByStaff as $staff): ?>
+                                <tr>
+                                    <td>
+                                        <?= e($staff['name']) ?>
+                                        <span class="table-subtext"><?= e($staff['email']) ?></span>
+                                    </td>
+                                    <td><?= (int) $staff['closed_tickets'] ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

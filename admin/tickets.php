@@ -11,34 +11,37 @@ $perPage = 10;
 $page = max(1, (int) ($_GET['page'] ?? 1));
 $where = [];
 $params = [];
+$where[] = 't.deleted_at IS NULL';
 
 if (!in_array($status, array_merge(['all'], $allowedStatuses), true)) {
     $status = 'all';
 }
 
 if ($status !== 'all') {
-    $where[] = 'status = ?';
+    $where[] = 't.status = ?';
     $params[] = $status;
 }
 
 if ($search !== '') {
-    $where[] = '(customer_email LIKE ? OR subject LIKE ?)';
+    $where[] = '(t.customer_email LIKE ? OR t.subject LIKE ?)';
     $params[] = '%' . $search . '%';
     $params[] = '%' . $search . '%';
 }
 
 $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
 
-$countStmt = db()->prepare('SELECT COUNT(*) FROM tickets' . $whereSql);
+$countStmt = db()->prepare('SELECT COUNT(*) FROM tickets t' . $whereSql);
 $countStmt->execute($params);
 $totalTickets = (int) $countStmt->fetchColumn();
 $totalPages = max(1, (int) ceil($totalTickets / $perPage));
 $page = min($page, $totalPages);
 $offset = ($page - 1) * $perPage;
 
-$sql = 'SELECT id, customer_name, customer_email, subject, priority, status, created_at
-        FROM tickets' . $whereSql . '
-        ORDER BY created_at DESC
+$sql = 'SELECT t.id, t.customer_name, t.customer_email, t.subject, t.priority, t.status, t.created_at,
+            u.name AS assigned_name, u.email AS assigned_email
+        FROM tickets t
+        LEFT JOIN users u ON t.assigned_to = u.id' . $whereSql . '
+        ORDER BY t.created_at DESC
         LIMIT ? OFFSET ?';
 
 $stmt = db()->prepare($sql);
@@ -85,6 +88,9 @@ function page_url(int $page, string $status, string $search): string
             <a href="index.php">Dashboard</a>
             <a class="active" href="tickets.php">Tickets</a>
             <a href="customers.php">Customers</a>
+            <?php if (can_manage_users()): ?>
+                <a href="users.php">Users</a>
+            <?php endif; ?>
             <a href="logout.php">Logout</a>
         </nav>
     </header>
@@ -125,6 +131,7 @@ function page_url(int $page, string $status, string $search): string
                         <th>Subject</th>
                         <th>Priority</th>
                         <th>Status</th>
+                        <th>Assigned To</th>
                         <th>Created</th>
                         <th>Action</th>
                     </tr>
@@ -132,7 +139,7 @@ function page_url(int $page, string $status, string $search): string
                 <tbody>
                     <?php if (!$tickets): ?>
                         <tr>
-                            <td colspan="8" class="empty-state">No tickets found.</td>
+                            <td colspan="9" class="empty-state">No tickets found.</td>
                         </tr>
                     <?php endif; ?>
 
@@ -150,8 +157,9 @@ function page_url(int $page, string $status, string $search): string
                             <td>
                                 <span class="status-badge status-<?= e($ticket['status']) ?>"><?= e(str_replace('_', ' ', $ticket['status'])) ?></span>
                             </td>
+                            <td><?= e($ticket['assigned_name'] ?: ($ticket['assigned_email'] ?: 'Unassigned')) ?></td>
                             <td><?= e($ticket['created_at']) ?></td>
-                            <td><a href="ticket.php?id=<?= (int) $ticket['id'] ?>">View</a></td>
+                            <td><a href="open_ticket.php?id=<?= (int) $ticket['id'] ?>">Open</a></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

@@ -25,7 +25,7 @@ if ($customer) {
     $stmt = db()->prepare(
         'SELECT id, subject, status, priority, created_at
          FROM tickets
-         WHERE customer_id = ?
+         WHERE customer_id = ? AND deleted_at IS NULL
          ORDER BY created_at DESC'
     );
     $stmt->execute([$customerId]);
@@ -51,6 +51,9 @@ if ($customer) {
             <a href="index.php">Dashboard</a>
             <a href="tickets.php">Tickets</a>
             <a class="active" href="customers.php">Customers</a>
+            <?php if (can_manage_users()): ?>
+                <a href="users.php">Users</a>
+            <?php endif; ?>
             <a href="logout.php">Logout</a>
         </nav>
     </header>

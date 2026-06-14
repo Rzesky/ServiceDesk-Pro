@@ -2,7 +2,7 @@
 
 ## Project overview
 
-ServiceDesk Pro is a lightweight PHP and MySQL help desk application. It lets customers submit support tickets from a public form and gives authenticated staff an admin area for reviewing tickets, managing customer records, adding replies or internal notes, changing ticket status, and reviewing activity history.
+ServiceDesk Pro is a lightweight PHP and MySQL help desk application. It lets customers submit support tickets from a public form and gives authenticated staff an admin area for reviewing tickets, managing customer records, assigning ownership, adding replies or internal notes, changing ticket status, and reviewing activity history.
 
 ## Business purpose
 
@@ -11,8 +11,9 @@ The application supports small support teams that need a simple shared queue for
 ## Target users
 
 - Customers who need to submit support requests.
-- Support staff who review, update, and respond to tickets.
-- Administrators who monitor workload, customer records, and recent system activity.
+- Support staff who own, update, and respond to assigned tickets.
+- Team leaders who create staff accounts, delete tickets, and manage ticket workflow.
+- Administrators who manage staff hierarchy, workload, customer records, and recent system activity.
 - Developers who maintain or extend the application.
 
 ## System architecture
@@ -20,14 +21,14 @@ The application supports small support teams that need a simple shared queue for
 The application is a traditional server-rendered PHP app backed by a MySQL database.
 
 - Public interface: `public/index.php` handles customer ticket submission.
-- Admin interface: files in `admin/` require authentication and render dashboard, ticket, customer, and detail views.
+- Admin interface: files in `admin/` require authentication and render dashboard, ticket, customer, user management, and detail views.
 - Shared includes: files in `includes/` provide configuration, database access, authentication, and common helpers.
 - Database layer: PDO is used directly with prepared statements.
 - Presentation layer: PHP templates output HTML and share a lightweight, responsive UI system from `assets/css/style.css`.
 
 ## Folder structure
 
-- `admin/`: authenticated staff pages, including dashboard, tickets list, ticket detail, customers list, customer detail, login, and logout.
+- `admin/`: authenticated staff pages, including dashboard, tickets list, ticket opening workflow, ticket detail, customers list, customer detail, user management, login, and logout.
 - `assets/css/`: shared CSS for public and admin UI.
 - `assets/js/`: reserved for client-side behavior.
 - `database/`: schema, seed data, and migration SQL.
@@ -38,9 +39,9 @@ The application is a traditional server-rendered PHP app backed by a MySQL datab
 
 ## Database structure
 
-- `users`: authenticated staff accounts with name, email, password hash, role, and creation timestamp.
+- `users`: authenticated staff accounts with name, email, password hash, role (`admin`, `leader`, or `staff`), and creation timestamp.
 - `customers`: customer contact records with name, email, optional phone, and creation timestamp.
-- `tickets`: support tickets with customer snapshot fields, subject, message, priority, status, creation timestamp, and update timestamp.
+- `tickets`: support tickets with customer snapshot fields, subject, message, priority, status, assigned staff owner, soft delete timestamp, creation timestamp, and update timestamp.
 - `ticket_messages`: ticket conversation entries and internal notes linked to tickets and optionally to staff users.
 - `ticket_attachments`: uploaded ticket attachment metadata, including original file name, stored file name, MIME type, file size, and upload timestamp.
 - `activity_logs`: audit trail entries for customer creation, ticket creation, status changes, and message additions.
@@ -48,6 +49,7 @@ The application is a traditional server-rendered PHP app backed by a MySQL datab
 Important relationships:
 
 - `tickets.customer_id` references `customers.id` and is set to null if the customer is deleted.
+- `tickets.assigned_to` references `users.id` and is set to null if the assigned staff account is deleted.
 - `ticket_messages.ticket_id` references `tickets.id` and cascades on ticket deletion.
 - `ticket_messages.user_id` references `users.id` and is set to null if the user is deleted.
 - `ticket_attachments.ticket_id` references `tickets.id` and cascades on ticket deletion.
@@ -64,6 +66,10 @@ Important relationships:
 ## Security features
 
 - Admin pages are protected with session-based authentication.
+- Admin-only and leader-only workflows are enforced on the backend with role checks.
+- Leaders can create staff accounts only; admins can create staff, leader, and admin accounts.
+- Staff status transitions are restricted on the backend and cannot reopen tickets or move tickets back to open.
+- Ticket deletion is a POST-only soft delete and is limited to leaders and admins.
 - Passwords are verified using PHP password hashing APIs.
 - Database reads and writes use PDO prepared statements.
 - Output is escaped with `htmlspecialchars` before rendering.
@@ -82,8 +88,11 @@ Important relationships:
 - Admin login and logout.
 - Polished public and admin UI with consistent layout, navigation, cards, tables, forms, buttons, and status or priority badges.
 - Dashboard with ticket counts, latest tickets, latest activity, and analytics for recent ticket volume, priority distribution, top customers, and 30-day daily averages.
+- Dashboard workload tables for tickets assigned to each staff member and tickets closed by each staff member.
 - Ticket list with status filtering, search, and pagination.
-- Ticket detail page with ticket metadata, original message, message history, activity history, status updates, and reply/internal note creation.
+- Ticket ownership workflow: opening an open ticket from the ticket list moves it to `in_progress`, assigns it to the current user, and logs `ticket_opened`.
+- Ticket detail page with ticket metadata, assigned staff, original message, message history, activity history, status updates, soft delete action for leaders/admins, and reply/internal note creation.
+- User management page for admins and leaders, with backend role validation and password hashing.
 - Customer list with total ticket counts and last ticket date.
 - Customer detail page with customer profile information and all related tickets.
 - Activity logging for customer creation, ticket creation, status changes, and message additions.
@@ -94,7 +103,6 @@ Important relationships:
 
 - Customer-facing ticket lookup and reply flow.
 - Email notifications for new tickets and staff replies.
-- Role-specific permissions for staff and administrators.
 - Message-level attachments for staff replies and internal notes.
 - Attachment management, including deleting old or incorrect uploads.
 - Customer editing and merge tools.
@@ -120,6 +128,10 @@ Important relationships:
 - New database queries should use `db()->prepare()` and parameter binding or `execute()` parameters.
 - Any user-controlled or database-rendered value should be escaped before output.
 - Ticket status values are limited to `open`, `in_progress`, `waiting`, and `closed`.
+- User role values are limited to `admin`, `leader`, and `staff`.
+- Staff can change `in_progress` to `waiting` or `closed`, and `waiting` to `in_progress` or `closed`.
+- Leaders and admins can change tickets to any valid status.
+- Deleted tickets have `deleted_at` set and are excluded from normal ticket, customer, and dashboard views.
 - Ticket priority values are limited to `low`, `medium`, `high`, and `urgent`.
 - Ticket attachments are limited to JPG, JPEG, PNG, and PDF files with a maximum size of 5MB.
 - New customer and ticket workflows should write activity log entries when they create meaningful audit events.

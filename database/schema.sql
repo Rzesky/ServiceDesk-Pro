@@ -9,7 +9,7 @@ CREATE TABLE users (
   name VARCHAR(100) NOT NULL,
   email VARCHAR(150) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
-  role ENUM('staff', 'admin') NOT NULL DEFAULT 'staff',
+  role ENUM('staff', 'leader', 'admin') NOT NULL DEFAULT 'staff',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
@@ -31,15 +31,22 @@ CREATE TABLE tickets (
   message TEXT NOT NULL,
   priority ENUM('low', 'medium', 'high', 'urgent') NOT NULL DEFAULT 'medium',
   status ENUM('open', 'in_progress', 'waiting', 'closed') NOT NULL DEFAULT 'open',
+  assigned_to INT UNSIGNED NULL,
+  deleted_at TIMESTAMP NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_priority (priority),
   INDEX idx_status (status),
   INDEX idx_customer_id (customer_id),
+  INDEX idx_assigned_to (assigned_to),
+  INDEX idx_deleted_at (deleted_at),
   INDEX idx_customer_email (customer_email),
   INDEX idx_subject (subject),
   CONSTRAINT fk_tickets_customer
     FOREIGN KEY (customer_id) REFERENCES customers(id)
+    ON DELETE SET NULL,
+  CONSTRAINT fk_tickets_assigned_user
+    FOREIGN KEY (assigned_to) REFERENCES users(id)
     ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
@@ -77,7 +84,7 @@ CREATE TABLE activity_logs (
   ticket_id INT UNSIGNED NULL,
   customer_id INT UNSIGNED NULL,
   user_id INT UNSIGNED NULL,
-  action ENUM('ticket_created', 'customer_created', 'status_changed', 'message_added') NOT NULL,
+  action ENUM('ticket_created', 'customer_created', 'status_changed', 'message_added', 'ticket_opened', 'ticket_deleted') NOT NULL,
   description VARCHAR(255) NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_ticket_id (ticket_id),

@@ -8,7 +8,7 @@ $user = current_user();
 $stmt = db()->prepare(
     'SELECT c.id, c.name, c.email, c.phone, COUNT(t.id) AS total_tickets, MAX(t.created_at) AS last_ticket_date
      FROM customers c
-     LEFT JOIN tickets t ON t.customer_id = c.id
+     LEFT JOIN tickets t ON t.customer_id = c.id AND t.deleted_at IS NULL
      GROUP BY c.id, c.name, c.email, c.phone
      ORDER BY last_ticket_date DESC, c.created_at DESC'
 );
@@ -39,6 +39,9 @@ function e(string $value): string
             <a href="index.php">Dashboard</a>
             <a href="tickets.php">Tickets</a>
             <a class="active" href="customers.php">Customers</a>
+            <?php if (can_manage_users()): ?>
+                <a href="users.php">Users</a>
+            <?php endif; ?>
             <a href="logout.php">Logout</a>
         </nav>
     </header>

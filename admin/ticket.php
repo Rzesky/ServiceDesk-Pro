@@ -17,7 +17,13 @@ function e(string $value): string
 if (!$ticketId) {
     $ticket = null;
 } else {
-    $stmt = db()->prepare('SELECT * FROM tickets WHERE id = ? LIMIT 1');
+    $stmt = db()->prepare(
+        'SELECT t.*, u.name AS assigned_name, u.email AS assigned_email
+         FROM tickets t
+         LEFT JOIN users u ON t.assigned_to = u.id
+         WHERE t.id = ? AND t.deleted_at IS NULL
+         LIMIT 1'
+    );
     $stmt->execute([$ticketId]);
     $ticket = $stmt->fetch();
 }
@@ -34,22 +40,48 @@ if ($ticket && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
 
-            $stmt = db()->prepare('UPDATE tickets SET status = ? WHERE id = ?');
-            $stmt->execute([$status, $ticketId]);
+            if (!can_change_ticket_status($ticket['status'], $status)) {
+                $errors[] = 'You do not have permission to make that status change.';
+            } else {
+                $stmt = db()->prepare('UPDATE tickets SET status = ? WHERE id = ? AND deleted_at IS NULL');
+                $stmt->execute([$status, $ticketId]);
+
+                log_activity(
+                    'status_changed',
+                    'Status changed from ' . $ticket['status'] . ' to ' . $status . '.',
+                    $ticketId,
+                    $ticket['customer_id'] ? (int) $ticket['customer_id'] : null,
+                    (int) $user['id']
+                );
+
+                header('Location: ticket.php?id=' . $ticketId);
+                exit;
+            }
+        }
+
+        if (!in_array($status, $allowedStatuses, true)) {
+            $errors[] = 'Please choose a valid status.';
+        }
+    }
+
+    if ($action === 'delete_ticket') {
+        if (!can_delete_tickets()) {
+            $errors[] = 'You do not have permission to delete tickets.';
+        } else {
+            $stmt = db()->prepare('UPDATE tickets SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL');
+            $stmt->execute([$ticketId]);
 
             log_activity(
-                'status_changed',
-                'Status changed from ' . $ticket['status'] . ' to ' . $status . '.',
+                'ticket_deleted',
+                'Ticket soft deleted.',
                 $ticketId,
                 $ticket['customer_id'] ? (int) $ticket['customer_id'] : null,
                 (int) $user['id']
             );
 
-            header('Location: ticket.php?id=' . $ticketId);
+            header('Location: tickets.php');
             exit;
         }
-
-        $errors[] = 'Please choose a valid status.';
     }
 
     if ($action === 'add_message') {
@@ -133,6 +165,9 @@ if ($ticket) {
             <a href="index.php">Dashboard</a>
             <a class="active" href="tickets.php">Tickets</a>
             <a href="customers.php">Customers</a>
+            <?php if (can_manage_users()): ?>
+                <a href="users.php">Users</a>
+            <?php endif; ?>
             <a href="logout.php">Logout</a>
         </nav>
     </header>
@@ -147,7 +182,15 @@ if ($ticket) {
         <?php else: ?>
             <div class="page-header">
                 <h1>Ticket #<?= (int) $ticket['id'] ?></h1>
-                <a href="tickets.php">Back to tickets</a>
+                <div class="header-actions">
+                    <a href="tickets.php">Back to tickets</a>
+                    <?php if (can_delete_tickets()): ?>
+                        <form method="post" onsubmit="return confirm('Delete this ticket?');">
+                            <input type="hidden" name="action" value="delete_ticket">
+                            <button class="danger-button" type="submit">Delete</button>
+                        </form>
+                    <?php endif; ?>
+                </div>
             </div>
 
             <?php if ($errors): ?>
@@ -196,6 +239,10 @@ if ($ticket) {
                             <dd><span class="status-badge status-<?= e($ticket['status']) ?>"><?= e(str_replace('_', ' ', $ticket['status'])) ?></span></dd>
                         </div>
                         <div>
+                            <dt>Assigned To</dt>
+                            <dd><?= e($ticket['assigned_name'] ?: ($ticket['assigned_email'] ?: 'Unassigned')) ?></dd>
+                        </div>
+                        <div>
                             <dt>Created</dt>
                             <dd><?= e($ticket['created_at']) ?></dd>
                         </div>
@@ -213,6 +260,9 @@ if ($ticket) {
                         <label for="status">Status</label>
                         <select id="status" name="status">
                             <?php foreach ($allowedStatuses as $status): ?>
+                                <?php if ($status !== $ticket['status'] && !can_change_ticket_status($ticket['status'], $status)) {
+                                    continue;
+                                } ?>
                                 <option value="<?= e($status) ?>" <?= $ticket['status'] === $status ? 'selected' : '' ?>>
                                     <?= e(ucwords(str_replace('_', ' ', $status))) ?>
                                 </option>
