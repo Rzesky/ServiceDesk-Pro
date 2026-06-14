@@ -7,6 +7,8 @@ $user = current_user();
 $allowedStatuses = ['open', 'in_progress', 'waiting', 'closed'];
 $status = $_GET['status'] ?? 'all';
 $search = trim($_GET['search'] ?? '');
+$perPage = 10;
+$page = max(1, (int) ($_GET['page'] ?? 1));
 $where = [];
 $params = [];
 
@@ -25,21 +27,43 @@ if ($search !== '') {
     $params[] = '%' . $search . '%';
 }
 
-$sql = 'SELECT id, customer_name, customer_email, subject, priority, status, created_at FROM tickets';
+$whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
 
-if ($where) {
-    $sql .= ' WHERE ' . implode(' AND ', $where);
-}
+$countStmt = db()->prepare('SELECT COUNT(*) FROM tickets' . $whereSql);
+$countStmt->execute($params);
+$totalTickets = (int) $countStmt->fetchColumn();
+$totalPages = max(1, (int) ceil($totalTickets / $perPage));
+$page = min($page, $totalPages);
+$offset = ($page - 1) * $perPage;
 
-$sql .= ' ORDER BY created_at DESC';
+$sql = 'SELECT id, customer_name, customer_email, subject, priority, status, created_at
+        FROM tickets' . $whereSql . '
+        ORDER BY created_at DESC
+        LIMIT ? OFFSET ?';
 
 $stmt = db()->prepare($sql);
-$stmt->execute($params);
+
+foreach ($params as $index => $param) {
+    $stmt->bindValue($index + 1, $param);
+}
+
+$stmt->bindValue(count($params) + 1, $perPage, PDO::PARAM_INT);
+$stmt->bindValue(count($params) + 2, $offset, PDO::PARAM_INT);
+$stmt->execute();
 $tickets = $stmt->fetchAll();
 
 function e(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
+function page_url(int $page, string $status, string $search): string
+{
+    return 'tickets.php?' . http_build_query([
+        'status' => $status,
+        'search' => $search,
+        'page' => $page,
+    ]);
 }
 ?>
 <!doctype html>
@@ -132,6 +156,22 @@ function e(string $value): string
                 </tbody>
             </table>
         </div>
+
+        <nav class="pagination">
+            <?php if ($page > 1): ?>
+                <a href="<?= e(page_url($page - 1, $status, $search)) ?>">Previous</a>
+            <?php else: ?>
+                <span>Previous</span>
+            <?php endif; ?>
+
+            <strong>Page <?= $page ?> of <?= $totalPages ?></strong>
+
+            <?php if ($page < $totalPages): ?>
+                <a href="<?= e(page_url($page + 1, $status, $search)) ?>">Next</a>
+            <?php else: ?>
+                <span>Next</span>
+            <?php endif; ?>
+        </nav>
     </main>
 </body>
 </html>
