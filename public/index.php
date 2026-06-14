@@ -1,6 +1,14 @@
 <?php
 require_once __DIR__ . '/../includes/functions.php';
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 $errors = [];
 $success = false;
 $allowedPriorities = ['low', 'medium', 'high', 'urgent'];
@@ -14,33 +22,49 @@ $form = [
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (trim($_POST['website'] ?? '') !== '') {
+        $success = true;
+        $form = array_fill_keys(array_keys($form), '');
+    } elseif (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {
+        $errors[] = 'Invalid form submission. Please try again.';
+    }
+
     foreach ($form as $field => $value) {
         $form[$field] = trim($_POST[$field] ?? '');
     }
 
-    if ($form['name'] === '') {
+    $_SESSION['ticket_submissions'] = array_filter(
+        $_SESSION['ticket_submissions'] ?? [],
+        fn ($timestamp) => $timestamp > time() - 600
+    );
+
+    if (count($_SESSION['ticket_submissions']) >= 3) {
+        $errors[] = 'Please wait before submitting another ticket.';
+    }
+
+    if (!$success && $form['name'] === '') {
         $errors[] = 'Name is required.';
     }
 
-    if ($form['email'] === '') {
+    if (!$success && $form['email'] === '') {
         $errors[] = 'Email is required.';
-    } elseif (!filter_var($form['email'], FILTER_VALIDATE_EMAIL)) {
+    } elseif (!$success && !filter_var($form['email'], FILTER_VALIDATE_EMAIL)) {
         $errors[] = 'Please enter a valid email address.';
     }
 
-    if ($form['subject'] === '') {
+    if (!$success && $form['subject'] === '') {
         $errors[] = 'Subject is required.';
     }
 
-    if (!in_array($form['priority'], $allowedPriorities, true)) {
+    if (!$success && !in_array($form['priority'], $allowedPriorities, true)) {
         $errors[] = 'Please choose a valid priority.';
     }
 
-    if ($form['message'] === '') {
+    if (!$success && $form['message'] === '') {
         $errors[] = 'Message is required.';
     }
 
-    if (!$errors) {
+    if (!$success && !$errors) {
         $pdo = db();
         $pdo->beginTransaction();
 
@@ -103,6 +127,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
 
             $pdo->commit();
+            $_SESSION['ticket_submissions'][] = time();
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
             $success = true;
             $form = array_fill_keys(array_keys($form), '');
         } catch (Throwable $e) {
@@ -147,6 +173,9 @@ function old(string $field, array $form): string
                 <?php endif; ?>
 
                 <form method="post">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
+                    <input type="text" name="website" class="honeypot" tabindex="-1" autocomplete="off">
+
                     <label for="name">Name</label>
                     <input type="text" id="name" name="name" value="<?= old('name', $form) ?>" required>
 

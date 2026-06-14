@@ -140,6 +140,10 @@ button {
     margin-top: 20px;
 }
 
+.honeypot {
+    display: none;
+}
+
 .success-panel {
     text-align: center;
 }
