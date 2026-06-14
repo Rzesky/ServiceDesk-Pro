@@ -383,6 +383,33 @@ tr:last-child td {
     font-size: 14px;
 }
 
+.activity-list {
+    display: grid;
+    gap: 12px;
+}
+
+.activity-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.activity-item:last-child {
+    border-bottom: 0;
+}
+
+.activity-item p {
+    margin: 4px 0;
+}
+
+.activity-item span,
+.activity-item small {
+    color: #64748b;
+    font-size: 14px;
+}
+
 .checkbox-label {
     display: flex;
     align-items: center;

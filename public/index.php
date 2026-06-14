@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 $errors = [];
 $success = false;
@@ -56,7 +56,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $form['email'],
                     $form['phone'] ?: null,
                 ]);
-                $customerId = $pdo->lastInsertId();
+                $customerId = (int) $pdo->lastInsertId();
+
+                log_activity(
+                    'customer_created',
+                    'Customer created: ' . $form['email'],
+                    null,
+                    $customerId
+                );
             }
 
             $stmt = $pdo->prepare(
@@ -75,11 +82,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $ticketId = (int) $pdo->lastInsertId();
 
+            log_activity(
+                'ticket_created',
+                'Ticket created: ' . $form['subject'],
+                $ticketId,
+                (int) $customerId
+            );
+
             $stmt = $pdo->prepare(
                 'INSERT INTO ticket_messages (ticket_id, user_id, message, is_internal)
                  VALUES (?, NULL, ?, 0)'
             );
             $stmt->execute([$ticketId, $form['message']]);
+
+            log_activity(
+                'message_added',
+                'Initial customer message added.',
+                $ticketId,
+                (int) $customerId
+            );
 
             $pdo->commit();
             $success = true;

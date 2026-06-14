@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 require_login();
 
@@ -31,6 +32,14 @@ if ($ticket && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = db()->prepare('UPDATE tickets SET status = ? WHERE id = ?');
             $stmt->execute([$status, $ticketId]);
 
+            log_activity(
+                'status_changed',
+                'Status changed from ' . $ticket['status'] . ' to ' . $status . '.',
+                $ticketId,
+                $ticket['customer_id'] ? (int) $ticket['customer_id'] : null,
+                (int) $user['id']
+            );
+
             header('Location: ticket.php?id=' . $ticketId);
             exit;
         }
@@ -51,6 +60,14 @@ if ($ticket && $_SERVER['REQUEST_METHOD'] === 'POST') {
             );
             $stmt->execute([$ticketId, (int) $user['id'], $message, $isInternal]);
 
+            log_activity(
+                'message_added',
+                $isInternal ? 'Internal note added.' : 'Reply added.',
+                $ticketId,
+                $ticket['customer_id'] ? (int) $ticket['customer_id'] : null,
+                (int) $user['id']
+            );
+
             header('Location: ticket.php?id=' . $ticketId);
             exit;
         }
@@ -58,6 +75,7 @@ if ($ticket && $_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $messages = [];
+$activityLogs = [];
 
 if ($ticket) {
     $stmt = db()->prepare(
@@ -69,6 +87,16 @@ if ($ticket) {
     );
     $stmt->execute([$ticketId]);
     $messages = $stmt->fetchAll();
+
+    $stmt = db()->prepare(
+        'SELECT al.*, u.name AS user_name, u.email AS user_email
+         FROM activity_logs al
+         LEFT JOIN users u ON al.user_id = u.id
+         WHERE al.ticket_id = ?
+         ORDER BY al.created_at DESC'
+    );
+    $stmt->execute([$ticketId]);
+    $activityLogs = $stmt->fetchAll();
 }
 ?>
 <!doctype html>
@@ -199,6 +227,29 @@ if ($ticket) {
                                 <span><?= $message['is_internal'] ? 'Internal note' : 'Reply' ?></span>
                             </div>
                             <p><?= nl2br(e($message['message'])) ?></p>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2>Activity History</h2>
+
+                <div class="activity-list">
+                    <?php if (!$activityLogs): ?>
+                        <p class="muted">No activity yet.</p>
+                    <?php endif; ?>
+
+                    <?php foreach ($activityLogs as $activity): ?>
+                        <article class="activity-item">
+                            <div>
+                                <strong><?= e(str_replace('_', ' ', $activity['action'])) ?></strong>
+                                <p><?= e($activity['description']) ?></p>
+                                <?php if ($activity['user_id']): ?>
+                                    <small><?= e($activity['user_name'] ?: $activity['user_email']) ?></small>
+                                <?php endif; ?>
+                            </div>
+                            <span><?= e($activity['created_at']) ?></span>
                         </article>
                     <?php endforeach; ?>
                 </div>

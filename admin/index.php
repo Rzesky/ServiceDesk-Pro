@@ -23,6 +23,17 @@ $stmt = db()->prepare(
 $stmt->execute();
 $latestTickets = $stmt->fetchAll();
 
+$stmt = db()->prepare(
+    'SELECT al.*, t.subject, u.name AS user_name, u.email AS user_email
+     FROM activity_logs al
+     LEFT JOIN tickets t ON al.ticket_id = t.id
+     LEFT JOIN users u ON al.user_id = u.id
+     ORDER BY al.created_at DESC
+     LIMIT 8'
+);
+$stmt->execute();
+$latestActivity = $stmt->fetchAll();
+
 function e(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
@@ -121,6 +132,31 @@ function e(string $value): string
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+            </div>
+        </section>
+
+        <section class="panel dashboard-section">
+            <h2>Latest Activity</h2>
+
+            <div class="activity-list">
+                <?php if (!$latestActivity): ?>
+                    <p class="muted">No activity yet.</p>
+                <?php endif; ?>
+
+                <?php foreach ($latestActivity as $activity): ?>
+                    <article class="activity-item">
+                        <div>
+                            <strong><?= e(str_replace('_', ' ', $activity['action'])) ?></strong>
+                            <p><?= e($activity['description']) ?></p>
+                            <?php if ($activity['ticket_id']): ?>
+                                <a href="ticket.php?id=<?= (int) $activity['ticket_id'] ?>">
+                                    View ticket
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                        <span><?= e($activity['created_at']) ?></span>
+                    </article>
+                <?php endforeach; ?>
             </div>
         </section>
     </main>
