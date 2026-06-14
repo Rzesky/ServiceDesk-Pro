@@ -15,7 +15,7 @@ foreach ($stmt->fetchAll() as $row) {
 }
 
 $stmt = db()->prepare(
-    'SELECT id, customer_name, subject, status, created_at
+    'SELECT id, customer_name, subject, priority, status, created_at
      FROM tickets
      ORDER BY created_at DESC
      LIMIT 5'
@@ -87,6 +87,7 @@ function e(string $value): string
                         <tr>
                             <th>Customer</th>
                             <th>Subject</th>
+                            <th>Priority</th>
                             <th>Status</th>
                             <th>Created</th>
                         </tr>
@@ -94,7 +95,7 @@ function e(string $value): string
                     <tbody>
                         <?php if (!$latestTickets): ?>
                             <tr>
-                                <td colspan="4" class="empty-state">No tickets found.</td>
+                                <td colspan="5" class="empty-state">No tickets found.</td>
                             </tr>
                         <?php endif; ?>
 
@@ -105,6 +106,11 @@ function e(string $value): string
                                     <a href="ticket.php?id=<?= (int) $ticket['id'] ?>">
                                         <?= e($ticket['subject']) ?>
                                     </a>
+                                </td>
+                                <td>
+                                    <span class="priority-badge priority-<?= e($ticket['priority']) ?>">
+                                        <?= e(ucfirst($ticket['priority'])) ?>
+                                    </span>
                                 </td>
                                 <td>
                                     <span class="status-badge"><?= e(str_replace('_', ' ', $ticket['status'])) ?></span>

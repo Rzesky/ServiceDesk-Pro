@@ -253,6 +253,33 @@ tr:last-child td {
     padding: 4px 10px;
 }
 
+.priority-badge {
+    display: inline-block;
+    border-radius: 999px;
+    font-size: 13px;
+    padding: 4px 10px;
+}
+
+.priority-low {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.priority-medium {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.priority-high {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.priority-urgent {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
 .empty-state {
     color: #64748b;
     text-align: center;

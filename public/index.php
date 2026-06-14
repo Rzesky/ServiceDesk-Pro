@@ -3,11 +3,13 @@ require_once __DIR__ . '/../includes/db.php';
 
 $errors = [];
 $success = false;
+$allowedPriorities = ['low', 'medium', 'high', 'urgent'];
 $form = [
     'name' => '',
     'email' => '',
     'phone' => '',
     'subject' => '',
+    'priority' => 'medium',
     'message' => '',
 ];
 
@@ -30,6 +32,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Subject is required.';
     }
 
+    if (!in_array($form['priority'], $allowedPriorities, true)) {
+        $errors[] = 'Please choose a valid priority.';
+    }
+
     if ($form['message'] === '') {
         $errors[] = 'Message is required.';
     }
@@ -40,14 +46,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         try {
             $stmt = $pdo->prepare(
-                'INSERT INTO tickets (customer_name, customer_email, customer_phone, subject, message)
-                 VALUES (?, ?, ?, ?, ?)'
+                'INSERT INTO tickets (customer_name, customer_email, customer_phone, subject, priority, message)
+                 VALUES (?, ?, ?, ?, ?, ?)'
             );
             $stmt->execute([
                 $form['name'],
                 $form['email'],
                 $form['phone'] ?: null,
                 $form['subject'],
+                $form['priority'],
                 $form['message'],
             ]);
 
@@ -115,6 +122,15 @@ function old(string $field, array $form): string
 
                     <label for="subject">Subject</label>
                     <input type="text" id="subject" name="subject" value="<?= old('subject', $form) ?>" required>
+
+                    <label for="priority">Priority</label>
+                    <select id="priority" name="priority">
+                        <?php foreach ($allowedPriorities as $priority): ?>
+                            <option value="<?= old('priority', ['priority' => $priority]) ?>" <?= $form['priority'] === $priority ? 'selected' : '' ?>>
+                                <?= htmlspecialchars(ucfirst($priority), ENT_QUOTES, 'UTF-8') ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
 
                     <label for="message">Message</label>
                     <textarea id="message" name="message" rows="6" required><?= old('message', $form) ?></textarea>

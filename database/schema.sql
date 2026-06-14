@@ -20,9 +20,11 @@ CREATE TABLE tickets (
   customer_phone VARCHAR(30) NULL,
   subject VARCHAR(200) NOT NULL,
   message TEXT NOT NULL,
+  priority ENUM('low', 'medium', 'high', 'urgent') NOT NULL DEFAULT 'medium',
   status ENUM('open', 'in_progress', 'waiting', 'closed') NOT NULL DEFAULT 'open',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_priority (priority),
   INDEX idx_status (status),
   INDEX idx_customer_email (customer_email),
   INDEX idx_subject (subject)

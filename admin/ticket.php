@@ -140,6 +140,14 @@ if ($ticket) {
                             <dd><?= e($ticket['subject']) ?></dd>
                         </div>
                         <div>
+                            <dt>Priority</dt>
+                            <dd>
+                                <span class="priority-badge priority-<?= e($ticket['priority']) ?>">
+                                    <?= e(ucfirst($ticket['priority'])) ?>
+                                </span>
+                            </dd>
+                        </div>
+                        <div>
                             <dt>Status</dt>
                             <dd><span class="status-badge"><?= e(str_replace('_', ' ', $ticket['status'])) ?></span></dd>
                         </div>

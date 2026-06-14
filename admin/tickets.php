@@ -25,7 +25,7 @@ if ($search !== '') {
     $params[] = '%' . $search . '%';
 }
 
-$sql = 'SELECT id, customer_name, customer_email, subject, status, created_at FROM tickets';
+$sql = 'SELECT id, customer_name, customer_email, subject, priority, status, created_at FROM tickets';
 
 if ($where) {
     $sql .= ' WHERE ' . implode(' AND ', $where);
@@ -98,6 +98,7 @@ function e(string $value): string
                         <th>Customer</th>
                         <th>Email</th>
                         <th>Subject</th>
+                        <th>Priority</th>
                         <th>Status</th>
                         <th>Created</th>
                         <th>Action</th>
@@ -106,7 +107,7 @@ function e(string $value): string
                 <tbody>
                     <?php if (!$tickets): ?>
                         <tr>
-                            <td colspan="7" class="empty-state">No tickets found.</td>
+                            <td colspan="8" class="empty-state">No tickets found.</td>
                         </tr>
                     <?php endif; ?>
 
@@ -116,6 +117,11 @@ function e(string $value): string
                             <td><?= e($ticket['customer_name']) ?></td>
                             <td><?= e($ticket['customer_email']) ?></td>
                             <td><?= e($ticket['subject']) ?></td>
+                            <td>
+                                <span class="priority-badge priority-<?= e($ticket['priority']) ?>">
+                                    <?= e(ucfirst($ticket['priority'])) ?>
+                                </span>
+                            </td>
                             <td>
                                 <span class="status-badge"><?= e(str_replace('_', ' ', $ticket['status'])) ?></span>
                             </td>
