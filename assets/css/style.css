@@ -40,6 +40,15 @@ button {
     font-weight: 700;
 }
 
+.button-link {
+    display: inline-block;
+    border-radius: 6px;
+    background: #2563eb;
+    color: #fff;
+    font-weight: 700;
+    padding: 10px 14px;
+}
+
 .auth-page {
     display: grid;
     min-height: 100vh;
@@ -127,6 +136,19 @@ button {
 
 .ticket-form-card button {
     margin-top: 20px;
+}
+
+.success-panel {
+    text-align: center;
+}
+
+.success-panel h1 {
+    margin: 0 0 12px;
+}
+
+.success-panel p {
+    margin: 0 0 24px;
+    color: #64748b;
 }
 
 .topbar {
