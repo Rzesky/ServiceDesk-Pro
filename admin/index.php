@@ -29,7 +29,7 @@ $stmt = db()->prepare(
      LEFT JOIN tickets t ON al.ticket_id = t.id
      LEFT JOIN users u ON al.user_id = u.id
      ORDER BY al.created_at DESC
-     LIMIT 8'
+     LIMIT 10'
 );
 $stmt->execute();
 $latestActivity = $stmt->fetchAll();

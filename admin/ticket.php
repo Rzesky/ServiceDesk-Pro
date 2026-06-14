@@ -29,6 +29,11 @@ if ($ticket && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $status = $_POST['status'] ?? '';
 
         if (in_array($status, $allowedStatuses, true)) {
+            if ($status === $ticket['status']) {
+                header('Location: ticket.php?id=' . $ticketId);
+                exit;
+            }
+
             $stmt = db()->prepare('UPDATE tickets SET status = ? WHERE id = ?');
             $stmt->execute([$status, $ticketId]);
 

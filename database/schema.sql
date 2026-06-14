@@ -63,7 +63,7 @@ CREATE TABLE activity_logs (
   ticket_id INT UNSIGNED NULL,
   customer_id INT UNSIGNED NULL,
   user_id INT UNSIGNED NULL,
-  action ENUM('ticket_created', 'status_changed', 'message_added', 'customer_created') NOT NULL,
+  action ENUM('ticket_created', 'customer_created', 'status_changed', 'message_added') NOT NULL,
   description VARCHAR(255) NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_ticket_id (ticket_id),
