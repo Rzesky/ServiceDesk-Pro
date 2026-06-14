@@ -45,11 +45,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
 
         try {
+            $stmt = $pdo->prepare('SELECT id FROM customers WHERE email = ? LIMIT 1');
+            $stmt->execute([$form['email']]);
+            $customerId = $stmt->fetchColumn();
+
+            if (!$customerId) {
+                $stmt = $pdo->prepare('INSERT INTO customers (name, email, phone) VALUES (?, ?, ?)');
+                $stmt->execute([
+                    $form['name'],
+                    $form['email'],
+                    $form['phone'] ?: null,
+                ]);
+                $customerId = $pdo->lastInsertId();
+            }
+
             $stmt = $pdo->prepare(
-                'INSERT INTO tickets (customer_name, customer_email, customer_phone, subject, priority, message)
-                 VALUES (?, ?, ?, ?, ?, ?)'
+                'INSERT INTO tickets (customer_id, customer_name, customer_email, customer_phone, subject, priority, message)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
             );
             $stmt->execute([
+                (int) $customerId,
                 $form['name'],
                 $form['email'],
                 $form['phone'] ?: null,

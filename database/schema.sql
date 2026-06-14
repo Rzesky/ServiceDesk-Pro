@@ -13,8 +13,17 @@ CREATE TABLE users (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+CREATE TABLE customers (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(150) NOT NULL UNIQUE,
+  phone VARCHAR(30) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
 CREATE TABLE tickets (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  customer_id INT UNSIGNED NULL,
   customer_name VARCHAR(100) NOT NULL,
   customer_email VARCHAR(150) NOT NULL,
   customer_phone VARCHAR(30) NULL,
@@ -26,8 +35,12 @@ CREATE TABLE tickets (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_priority (priority),
   INDEX idx_status (status),
+  INDEX idx_customer_id (customer_id),
   INDEX idx_customer_email (customer_email),
-  INDEX idx_subject (subject)
+  INDEX idx_subject (subject),
+  CONSTRAINT fk_tickets_customer
+    FOREIGN KEY (customer_id) REFERENCES customers(id)
+    ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 CREATE TABLE ticket_messages (

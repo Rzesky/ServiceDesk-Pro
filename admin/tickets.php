@@ -84,6 +84,7 @@ function page_url(int $page, string $status, string $search): string
         <nav>
             <a href="index.php">Dashboard</a>
             <a href="tickets.php">Tickets</a>
+            <a href="customers.php">Customers</a>
             <a href="logout.php">Logout</a>
         </nav>
     </header>
