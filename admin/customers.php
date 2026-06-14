@@ -6,7 +6,7 @@ require_login();
 $user = current_user();
 
 $stmt = db()->prepare(
-    'SELECT c.name, c.email, c.phone, COUNT(t.id) AS total_tickets, MAX(t.created_at) AS last_ticket_date
+    'SELECT c.id, c.name, c.email, c.phone, COUNT(t.id) AS total_tickets, MAX(t.created_at) AS last_ticket_date
      FROM customers c
      LEFT JOIN tickets t ON t.customer_id = c.id
      GROUP BY c.id, c.name, c.email, c.phone
@@ -57,12 +57,13 @@ function e(string $value): string
                         <th>Phone</th>
                         <th>Total Tickets</th>
                         <th>Last Ticket</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (!$customers): ?>
                         <tr>
-                            <td colspan="5" class="empty-state">No customers found.</td>
+                            <td colspan="6" class="empty-state">No customers found.</td>
                         </tr>
                     <?php endif; ?>
 
@@ -73,6 +74,7 @@ function e(string $value): string
                             <td><?= e($customer['phone'] ?: 'Not provided') ?></td>
                             <td><?= (int) $customer['total_tickets'] ?></td>
                             <td><?= e($customer['last_ticket_date'] ?: 'No tickets') ?></td>
+                            <td><a href="customer.php?id=<?= (int) $customer['id'] ?>">View</a></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
