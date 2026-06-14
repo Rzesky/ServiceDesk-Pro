@@ -31,6 +31,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Local personal documentation
+docs/interview-cheatsheet.md
+
 # User uploads and generated files
 /uploads/
 /public/uploads/

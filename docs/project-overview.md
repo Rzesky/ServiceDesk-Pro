@@ -31,7 +31,7 @@ The application is a traditional server-rendered PHP app backed by a MySQL datab
 - `assets/css/`: shared CSS for public and admin UI.
 - `assets/js/`: reserved for client-side behavior.
 - `database/`: schema, seed data, and migration SQL.
-- `docs/`: project documentation for maintainers and interview preparation.
+- `docs/`: project documentation for maintainers and interview preparation, including `project-overview.md` and `interview-cheatsheet.md`.
 - `includes/`: configuration, PDO database connection, authentication helpers, and reusable functions.
 - `public/`: public-facing ticket submission page.
 
@@ -80,6 +80,7 @@ Important relationships:
 - Customer list with total ticket counts and last ticket date.
 - Customer detail page with customer profile information and all related tickets.
 - Activity logging for customer creation, ticket creation, status changes, and message additions.
+- German interview preparation guide for explaining the project clearly in job interviews.
 
 ## Future roadmap
 
@@ -111,3 +112,4 @@ Important relationships:
 - Ticket priority values are limited to `low`, `medium`, `high`, and `urgent`.
 - New customer and ticket workflows should write activity log entries when they create meaningful audit events.
 - This document should be updated after each completed feature so it remains a reliable project briefing.
+- `docs/interview-cheatsheet.md` provides simple German talking points for interview preparation.
