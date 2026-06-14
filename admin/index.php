@@ -7,10 +7,25 @@ $user = current_user();
 $statuses = ['open', 'in_progress', 'waiting', 'closed'];
 $counts = array_fill_keys($statuses, 0);
 
-$stmt = db()->query('SELECT status, COUNT(*) AS total FROM tickets GROUP BY status');
+$stmt = db()->prepare('SELECT status, COUNT(*) AS total FROM tickets GROUP BY status');
+$stmt->execute();
 
 foreach ($stmt->fetchAll() as $row) {
     $counts[$row['status']] = (int) $row['total'];
+}
+
+$stmt = db()->prepare(
+    'SELECT id, customer_name, subject, status, created_at
+     FROM tickets
+     ORDER BY created_at DESC
+     LIMIT 5'
+);
+$stmt->execute();
+$latestTickets = $stmt->fetchAll();
+
+function e(string $value): string
+{
+    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
 ?>
 <!doctype html>
@@ -25,7 +40,7 @@ foreach ($stmt->fetchAll() as $row) {
     <header class="topbar">
         <div>
             <strong>ServiceDesk Pro</strong>
-            <span><?= htmlspecialchars($user['name'] ?? $user['email']) ?></span>
+            <span><?= e($user['name'] ?? $user['email']) ?></span>
         </div>
 
         <nav>
@@ -40,24 +55,66 @@ foreach ($stmt->fetchAll() as $row) {
 
         <section class="stats-grid">
             <article class="stat-card">
-                <span>Open tickets</span>
+                <span>Open</span>
                 <strong><?= $counts['open'] ?></strong>
             </article>
 
             <article class="stat-card">
-                <span>In progress tickets</span>
+                <span>In Progress</span>
                 <strong><?= $counts['in_progress'] ?></strong>
             </article>
 
             <article class="stat-card">
-                <span>Waiting tickets</span>
+                <span>Waiting</span>
                 <strong><?= $counts['waiting'] ?></strong>
             </article>
 
             <article class="stat-card">
-                <span>Closed tickets</span>
+                <span>Closed</span>
                 <strong><?= $counts['closed'] ?></strong>
             </article>
+        </section>
+
+        <section class="panel dashboard-section">
+            <div class="page-header">
+                <h2>Latest Tickets</h2>
+                <a href="tickets.php">View all</a>
+            </div>
+
+            <div class="table-card flush">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (!$latestTickets): ?>
+                            <tr>
+                                <td colspan="4" class="empty-state">No tickets found.</td>
+                            </tr>
+                        <?php endif; ?>
+
+                        <?php foreach ($latestTickets as $ticket): ?>
+                            <tr>
+                                <td><?= e($ticket['customer_name']) ?></td>
+                                <td>
+                                    <a href="ticket.php?id=<?= (int) $ticket['id'] ?>">
+                                        <?= e($ticket['subject']) ?>
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="status-badge"><?= e(str_replace('_', ' ', $ticket['status'])) ?></span>
+                                </td>
+                                <td><?= e($ticket['created_at']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         </section>
     </main>
 </body>

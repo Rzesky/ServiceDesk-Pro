@@ -217,6 +217,11 @@ button {
     background: #fff;
 }
 
+.table-card.flush {
+    border: 0;
+    border-radius: 0;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -348,6 +353,7 @@ tr:last-child td {
     display: grid;
     gap: 16px;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin-bottom: 20px;
 }
 
 .stat-card {
@@ -365,4 +371,8 @@ tr:last-child td {
     display: block;
     margin-top: 10px;
     font-size: 32px;
+}
+
+.dashboard-section .page-header h2 {
+    margin: 0;
 }
