@@ -15,6 +15,43 @@ foreach ($stmt->fetchAll() as $row) {
 }
 
 $stmt = db()->prepare(
+    'SELECT COUNT(*) AS total
+     FROM tickets
+     WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)'
+);
+$stmt->execute();
+$ticketsLastSevenDays = (int) $stmt->fetchColumn();
+
+$priorities = ['low', 'medium', 'high', 'urgent'];
+$priorityCounts = array_fill_keys($priorities, 0);
+
+$stmt = db()->prepare('SELECT priority, COUNT(*) AS total FROM tickets GROUP BY priority');
+$stmt->execute();
+
+foreach ($stmt->fetchAll() as $row) {
+    $priorityCounts[$row['priority']] = (int) $row['total'];
+}
+
+$stmt = db()->prepare(
+    'SELECT c.id, c.name, c.email, COUNT(t.id) AS total_tickets
+     FROM customers c
+     INNER JOIN tickets t ON t.customer_id = c.id
+     GROUP BY c.id, c.name, c.email
+     ORDER BY total_tickets DESC, c.name ASC
+     LIMIT 5'
+);
+$stmt->execute();
+$topCustomers = $stmt->fetchAll();
+
+$stmt = db()->prepare(
+    'SELECT COUNT(*) / 30 AS average_per_day
+     FROM tickets
+     WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)'
+);
+$stmt->execute();
+$averageTicketsPerDay = (float) $stmt->fetchColumn();
+
+$stmt = db()->prepare(
     'SELECT id, customer_name, subject, priority, status, created_at
      FROM tickets
      ORDER BY created_at DESC
@@ -84,6 +121,69 @@ function e(string $value): string
             <article class="stat-card">
                 <span>Closed</span>
                 <strong><?= $counts['closed'] ?></strong>
+            </article>
+        </section>
+
+        <section class="analytics-grid">
+            <article class="panel analytics-card">
+                <span class="analytics-label">Tickets created last 7 days</span>
+                <strong><?= $ticketsLastSevenDays ?></strong>
+                <p class="muted">Includes today and the previous 6 days.</p>
+            </article>
+
+            <article class="panel analytics-card">
+                <span class="analytics-label">Average tickets per day</span>
+                <strong><?= e(number_format($averageTicketsPerDay, 1)) ?></strong>
+                <p class="muted">Based on tickets created in the last 30 days.</p>
+            </article>
+
+            <article class="panel dashboard-section">
+                <h2>Tickets by Priority</h2>
+
+                <div class="analytics-list">
+                    <?php foreach ($priorityCounts as $priority => $total): ?>
+                        <div class="analytics-row">
+                            <span class="priority-badge priority-<?= e($priority) ?>">
+                                <?= e(ucfirst($priority)) ?>
+                            </span>
+                            <strong><?= (int) $total ?></strong>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </article>
+
+            <article class="panel dashboard-section">
+                <h2>Top 5 Customers</h2>
+
+                <div class="table-card flush">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Tickets</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (!$topCustomers): ?>
+                                <tr>
+                                    <td colspan="2" class="empty-state">No customer ticket data yet.</td>
+                                </tr>
+                            <?php endif; ?>
+
+                            <?php foreach ($topCustomers as $customer): ?>
+                                <tr>
+                                    <td>
+                                        <a href="customer.php?id=<?= (int) $customer['id'] ?>">
+                                            <?= e($customer['name']) ?>
+                                        </a>
+                                        <span class="table-subtext"><?= e($customer['email']) ?></span>
+                                    </td>
+                                    <td><?= (int) $customer['total_tickets'] ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
             </article>
         </section>
 

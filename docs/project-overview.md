@@ -80,7 +80,7 @@ Important relationships:
 - Public customer ticket submission.
 - Automatic customer creation when a new email address submits a ticket.
 - Admin login and logout.
-- Dashboard with ticket counts, latest tickets, and latest activity.
+- Dashboard with ticket counts, latest tickets, latest activity, and analytics for recent ticket volume, priority distribution, top customers, and 30-day daily averages.
 - Ticket list with status filtering, search, and pagination.
 - Ticket detail page with ticket metadata, original message, message history, activity history, status updates, and reply/internal note creation.
 - Customer list with total ticket counts and last ticket date.
@@ -97,7 +97,7 @@ Important relationships:
 - Message-level attachments for staff replies and internal notes.
 - Attachment management, including deleting old or incorrect uploads.
 - Customer editing and merge tools.
-- More advanced dashboard reporting.
+- Dashboard charts and trend views when JavaScript charting is introduced.
 - Full-text ticket search.
 - Automated tests for core workflows.
 - Deployment and backup documentation.
