@@ -50,7 +50,7 @@ if ($customer) {
         <nav>
             <a href="index.php">Dashboard</a>
             <a href="tickets.php">Tickets</a>
-            <a href="customers.php">Customers</a>
+            <a class="active" href="customers.php">Customers</a>
             <a href="logout.php">Logout</a>
         </nav>
     </header>
@@ -121,7 +121,7 @@ if ($customer) {
                                         </a>
                                     </td>
                                     <td>
-                                        <span class="status-badge"><?= e(str_replace('_', ' ', $ticket['status'])) ?></span>
+                                        <span class="status-badge status-<?= e($ticket['status']) ?>"><?= e(str_replace('_', ' ', $ticket['status'])) ?></span>
                                     </td>
                                     <td>
                                         <span class="priority-badge priority-<?= e($ticket['priority']) ?>">

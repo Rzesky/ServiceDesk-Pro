@@ -23,7 +23,7 @@ The application is a traditional server-rendered PHP app backed by a MySQL datab
 - Admin interface: files in `admin/` require authentication and render dashboard, ticket, customer, and detail views.
 - Shared includes: files in `includes/` provide configuration, database access, authentication, and common helpers.
 - Database layer: PDO is used directly with prepared statements.
-- Presentation layer: PHP templates output HTML and share styling from `assets/css/style.css`.
+- Presentation layer: PHP templates output HTML and share a lightweight, responsive UI system from `assets/css/style.css`.
 
 ## Folder structure
 
@@ -58,7 +58,7 @@ Important relationships:
 - PHP for server-side rendering and request handling.
 - MySQL or MariaDB for relational data storage.
 - PDO for database access with prepared statements.
-- HTML and CSS for the user interface.
+- HTML and CSS for the user interface, with no frontend framework.
 - XAMPP-friendly local development structure.
 
 ## Security features
@@ -80,6 +80,7 @@ Important relationships:
 - Public customer ticket submission.
 - Automatic customer creation when a new email address submits a ticket.
 - Admin login and logout.
+- Polished public and admin UI with consistent layout, navigation, cards, tables, forms, buttons, and status or priority badges.
 - Dashboard with ticket counts, latest tickets, latest activity, and analytics for recent ticket volume, priority distribution, top customers, and 30-day daily averages.
 - Ticket list with status filtering, search, and pagination.
 - Ticket detail page with ticket metadata, original message, message history, activity history, status updates, and reply/internal note creation.
@@ -110,7 +111,8 @@ Important relationships:
 - Activity logs are stored separately from ticket messages because they represent operational events, not conversation content.
 - Ticket attachments are stored on disk while metadata is stored in the database to keep the database smaller and file delivery simpler.
 - Admin pages define a local `e()` helper to make safe output escaping obvious at the template level.
-- The UI uses a small shared stylesheet instead of a heavy frontend framework to keep the project simple and maintainable.
+- The UI uses a small shared stylesheet instead of a heavy frontend framework to keep the project simple, fast, and maintainable.
+- Shared design tokens in `assets/css/style.css` define the calm business palette, spacing, borders, shadows, typography, and reusable component styling.
 
 ## Important implementation details
 

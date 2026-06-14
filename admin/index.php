@@ -92,7 +92,7 @@ function e(string $value): string
         </div>
 
         <nav>
-            <a href="index.php">Dashboard</a>
+            <a class="active" href="index.php">Dashboard</a>
             <a href="tickets.php">Tickets</a>
             <a href="customers.php">Customers</a>
             <a href="logout.php">Logout</a>
@@ -225,7 +225,7 @@ function e(string $value): string
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="status-badge"><?= e(str_replace('_', ' ', $ticket['status'])) ?></span>
+                                    <span class="status-badge status-<?= e($ticket['status']) ?>"><?= e(str_replace('_', ' ', $ticket['status'])) ?></span>
                                 </td>
                                 <td><?= e($ticket['created_at']) ?></td>
                             </tr>
