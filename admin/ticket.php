@@ -81,6 +81,7 @@ if ($ticket && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $messages = [];
 $activityLogs = [];
+$attachments = [];
 
 if ($ticket) {
     $stmt = db()->prepare(
@@ -102,6 +103,15 @@ if ($ticket) {
     );
     $stmt->execute([$ticketId]);
     $activityLogs = $stmt->fetchAll();
+
+    $stmt = db()->prepare(
+        'SELECT id, original_name, stored_name, mime_type, file_size, created_at
+         FROM ticket_attachments
+         WHERE ticket_id = ?
+         ORDER BY created_at ASC'
+    );
+    $stmt->execute([$ticketId]);
+    $attachments = $stmt->fetchAll();
 }
 ?>
 <!doctype html>
@@ -232,6 +242,29 @@ if ($ticket) {
                                 <span><?= $message['is_internal'] ? 'Internal note' : 'Reply' ?></span>
                             </div>
                             <p><?= nl2br(e($message['message'])) ?></p>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2>Attachments</h2>
+
+                <div class="attachment-list">
+                    <?php if (!$attachments): ?>
+                        <p class="muted">No attachments uploaded.</p>
+                    <?php endif; ?>
+
+                    <?php foreach ($attachments as $attachment): ?>
+                        <article class="attachment-item">
+                            <div>
+                                <strong><?= e($attachment['original_name']) ?></strong>
+                                <span><?= e($attachment['mime_type']) ?> &middot; <?= number_format((int) $attachment['file_size'] / 1024, 1) ?> KB</span>
+                            </div>
+                            <div class="attachment-actions">
+                                <a href="../uploads/<?= e(rawurlencode($attachment['stored_name'])) ?>" target="_blank" rel="noopener">Open</a>
+                                <a href="../uploads/<?= e(rawurlencode($attachment['stored_name'])) ?>" download="<?= e($attachment['original_name']) ?>">Download</a>
+                            </div>
                         </article>
                     <?php endforeach; ?>
                 </div>

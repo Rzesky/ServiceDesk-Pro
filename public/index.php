@@ -64,9 +64,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Message is required.';
     }
 
+    $attachment = null;
+
+    if (!$success) {
+        $uploadResult = validate_ticket_attachment($_FILES['attachment'] ?? []);
+        $attachment = $uploadResult['attachment'];
+
+        if ($uploadResult['error']) {
+            $errors[] = $uploadResult['error'];
+        }
+    }
+
     if (!$success && !$errors) {
         $pdo = db();
         $pdo->beginTransaction();
+        $savedAttachmentPath = null;
 
         try {
             $stmt = $pdo->prepare('SELECT id FROM customers WHERE email = ? LIMIT 1');
@@ -126,6 +138,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 (int) $customerId
             );
 
+            if ($attachment) {
+                save_ticket_attachment($pdo, $ticketId, $attachment);
+                $savedAttachmentPath = __DIR__ . '/../uploads/' . $attachment['stored_name'];
+            }
+
             $pdo->commit();
             $_SESSION['ticket_submissions'][] = time();
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -133,6 +150,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $form = array_fill_keys(array_keys($form), '');
         } catch (Throwable $e) {
             $pdo->rollBack();
+
+            if ($savedAttachmentPath && is_file($savedAttachmentPath)) {
+                unlink($savedAttachmentPath);
+            }
+
             $errors[] = 'Could not submit your ticket. Please try again.';
         }
     }
@@ -172,7 +194,7 @@ function old(string $field, array $form): string
                     </div>
                 <?php endif; ?>
 
-                <form method="post">
+                <form method="post" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
                     <input type="text" name="website" class="honeypot" tabindex="-1" autocomplete="off">
 
@@ -199,6 +221,10 @@ function old(string $field, array $form): string
 
                     <label for="message">Message</label>
                     <textarea id="message" name="message" rows="6" required><?= old('message', $form) ?></textarea>
+
+                    <label for="attachment">Attachment</label>
+                    <input type="file" id="attachment" name="attachment" accept=".jpg,.jpeg,.png,.pdf">
+                    <p class="field-hint">Allowed: JPG, PNG, PDF. Max size: 5MB.</p>
 
                     <button type="submit">Submit Ticket</button>
                 </form>

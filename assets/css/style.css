@@ -140,6 +140,12 @@ button {
     margin-top: 20px;
 }
 
+.field-hint {
+    margin: 6px 0 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
 .honeypot {
     display: none;
 }
@@ -412,6 +418,34 @@ tr:last-child td {
 .activity-item small {
     color: #64748b;
     font-size: 14px;
+}
+
+.attachment-list {
+    display: grid;
+    gap: 12px;
+}
+
+.attachment-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f8fafc;
+}
+
+.attachment-item span {
+    display: block;
+    margin-top: 4px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.attachment-actions {
+    display: flex;
+    gap: 12px;
 }
 
 .checkbox-label {

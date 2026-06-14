@@ -35,7 +35,8 @@ pnpm-debug.log*
 docs/interview-cheatsheet.md
 
 # User uploads and generated files
-/uploads/
+/uploads/*
+!/uploads/.htaccess
 /public/uploads/
 /public/storage/
 
